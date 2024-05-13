@@ -1,0 +1,71 @@
+﻿@model DAL.Models.Music
+
+@{
+    ViewData["Title"] = "Details";
+}
+
+<h1>Details</h1>
+
+<div>
+    <h4>Music</h4>
+    <hr />
+    <dl class="row">
+        <dt class = "col-sm-2">
+            @Html.DisplayNameFor(model => model.Name)
+        </dt>
+        <dd class = "col-sm-10">
+            @Html.DisplayFor(model => model.Name)
+        </dd>
+    </dl>
+</div>
+
+
+
+    <audio controls="controls">
+        <source src="@Url.Action("GetMusicFile", new { id = Model.Id })" type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+@if (Model.Media.FirstOrDefault(m => m.MusicId == Model.Id) == null)
+{
+    <div>
+        <form asp-action="Upload" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="uploadedFile">Upload Music File</label>
+                <input type="file" class="form-control-file" id="uploadedFile" name="uploadedFile" required />
+            </div>
+            <button type="submit" class="btn btn-primary">Upload</button>
+        </form>
+    </div>
+}
+else
+{
+    @if (Model.Media.FirstOrDefault(m => m.MusicId == Model.Id).Picture == null)
+    {
+        <div>
+            <form asp-action="UploadImage" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="imageFile">Upload Picture</label>
+                    <input type="file" class="form-control-file" id="imageFile" name="imageFile" required />
+                </div>
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </form>
+        </div>
+    }
+    else
+    {
+        <img src="data:image;base64,@Convert.ToBase64String(Model.Media.FirstOrDefault(m=>m.MusicId == Model.Id).Picture)" />
+        //delete image button
+    }
+}
+
+
+
+
+
+
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model?.Id">Edit</a> |
+    <a asp-action="Index">Back to List</a>
+</div>
