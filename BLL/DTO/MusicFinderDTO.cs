@@ -16,4 +16,10 @@ namespace BLL.DTO
 
         public string Genre { get; set; }
     }
+
+
+    public class MusicFuzzyFinderDTO
+    {
+        public string Name { get; set; }
+    }
 }

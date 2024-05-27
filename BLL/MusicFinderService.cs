@@ -1,11 +1,11 @@
-﻿
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BLL.DTO;
 using DAL.Models;
 using Microsoft.EntityFrameworkCore;
+using FuzzySharp;
 
 namespace BLL
 {
@@ -53,72 +53,29 @@ namespace BLL
             return query.ToList();
         }
 
-        // Метод поиска с учетом возможных опечаток
-        public List<Music> FindMusicWithFuzzySearch(MusicFinderDTO finder)
+        public List<Music> FindMusicWithFuzzySearch(string searchQuery)
         {
-           
-            // .... FuzzySharp или написать свой алгоритм.
-          
-            return FindMusic(finder);
+            if (string.IsNullOrEmpty(searchQuery))
+                return new List<Music>();
+
+            IQueryable<Music> query = _soundContext.Musics
+                .Include(m => m.Author)
+                .Include(m => m.MusicTags)
+                    .ThenInclude(mt => mt.Tag)
+                .Include(m => m.MusicGenres)
+                    .ThenInclude(mg => mg.Genre);
+
+            var allMusic = query.ToList();
+
+            allMusic = allMusic.Where(m =>
+                Fuzz.PartialRatio(m.Name, searchQuery) > 70 ||
+                (m.Author != null && Fuzz.PartialRatio(m.Author.Name, searchQuery) > 70) ||
+                m.MusicTags.Any(mt => Fuzz.PartialRatio(mt.Tag.Name, searchQuery) > 70) ||
+                m.MusicGenres.Any(mg => Fuzz.PartialRatio(mg.Genre.Name, searchQuery) > 70)
+            ).ToList();
+
+            return allMusic;
         }
     }
+
 }
-
-
-//using System;
-//using System.Collections.Generic;
-//using System.Linq;
-//using System.Text;
-//using System.Threading.Tasks;
-//using BLL.DTO;
-//using DAL.Models;
-
-//namespace BLL
-//{
-
-
-//    public class MusicFinderService
-//    {
-
-//        SoundContext _soundContext;
-
-//        public MusicFinderService(SoundContext soundContext)
-//        {
-//            _soundContext = soundContext;
-//        }
-//        public List<Music> FindMusic(MusicFinderDTO finder)
-//        {
-//            List<Music> result = new List<Music>();
-//            if (finder == null)
-//                return null;
-
-//            IQueryable<Music> query = _soundContext.Musics;
-
-//            if (!String.IsNullOrEmpty(finder.Name))
-//            {
-//                query = query.Where(m => m.Name.Contains(finder.Name));
-//            }
-
-//            if (!String.IsNullOrEmpty(finder.Author)) 
-//            {
-//                query = query.Where(m => m.Author.Name.Contains(finder.Author));
-//            }
-
-//            if (!String.IsNullOrEmpty(finder.Tag))
-//            {
-//                query = query.Where(m => m.MusicTags.Any(mt => mt.Tag.Name.Contains(finder.Tag)));
-//            }
-
-//            if (!String.IsNullOrEmpty(finder.Genre))
-//            {
-//                query = query.Where(m => m.MusicGenres.Any(mg => mg.Genre.Name.Contains(finder.Genre)));
-//            }
-
-//            result = query.ToList(); 
-
-//            return result;
-//        }
-
-
-//    }
-//}

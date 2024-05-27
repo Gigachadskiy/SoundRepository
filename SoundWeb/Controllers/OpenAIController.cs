@@ -11,10 +11,12 @@ namespace SoundWeb.Controllers
     public class OpenAIController : Controller
     {
         private readonly OpenAIService _openAIService;
+        private readonly MusicFinderService _musicFinderService;
 
-        public OpenAIController(OpenAIService openAIService)
+        public OpenAIController(OpenAIService openAIService, MusicFinderService musicFinderService)
         {
             _openAIService = openAIService;
+            _musicFinderService = musicFinderService;
         }
 
         public IActionResult Find()
@@ -63,35 +65,19 @@ namespace SoundWeb.Controllers
             return View(finder);
         }
 
-        // Новый метод для поиска музыки в базе данных
-        public IActionResult FindMusicInDatabase()
+        // Метод для поиска музыки в базе данных с учетом возможных опечаток
+        public IActionResult FindMusicWithFuzzySearch()
         {
-            MusicFinderDTO finder = new MusicFinderDTO();
+            MusicFuzzyFinderDTO finder = new MusicFuzzyFinderDTO();
             return View(finder);
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult FindMusicInDatabase([Bind("Name,Author,Tag,Genre")] MusicFinderDTO finder)
+        public IActionResult FindMusicWithFuzzySearch([Bind("Name")] MusicFuzzyFinderDTO finder)
         {
-            List<Music> results = _openAIService.FindMusicInDatabase(finder);
+            List<Music> results = _musicFinderService.FindMusicWithFuzzySearch(finder.Name);
             ViewBag.Results = results;
-            return View(finder);
-        }
-
-        // Новый метод для поиска музыки с использованием OpenAI
-        public IActionResult FindMusicUsingOpenAI()
-        {
-            OpenAIDTO finder = new OpenAIDTO();
-            return View(finder);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> FindMusicUsingOpenAI([Bind("Question")] OpenAIDTO finder)
-        {
-            finder.Answer = await _openAIService.FindMusicUsingOpenAI(finder.Question);
-            ViewBag.Answer = finder.Answer;
             return View(finder);
         }
     }
