@@ -1,14 +1,14 @@
 ﻿@model BLL.DTO.OpenAIDTO
+
 @{
-    ViewData["Title"] = "Answer";
+    ViewData["Title"] = "Show Answer";
 }
 
-<h1>Answer : </h1>
+<h2>OpenAI Answer</h2>
 
-
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        @Model.Answer
-    </div>
+<div>
+    <p><strong>Question:</strong> @Model.Question</p>
+    <p><strong>Answer:</strong> @Model.Answer</p>
 </div>
+
+<a asp-action="Find" class="btn btn-primary">Ask Another Question</a>

@@ -12,3 +12,4 @@ namespace BLL.DTO
         public string Answer { get; set; }
     }
 }
+

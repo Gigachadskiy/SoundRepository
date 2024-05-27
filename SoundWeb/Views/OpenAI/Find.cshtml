@@ -1,22 +1,15 @@
 ﻿@model BLL.DTO.OpenAIDTO
+
 @{
     ViewData["Title"] = "Find";
 }
 
-<h1>Find</h1>
+<h2>Ask OpenAI</h2>
 
-
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Find" method="post">
-            <div class="form-group">
-                <label asp-for="Question" class="control-label">Name</label>
-                <input asp-for="Question" class="form-control" />
-            </div>
-            <div class="form-group">
-                <input type="submit" value="Find" class="btn btn-primary" />
-            </div>
-        </form>
+<form asp-action="Find" method="post">
+    <div class="form-group">
+        <label for="Question">Question</label>
+        <input type="text" class="form-control" id="Question" name="Question" value="@Model.Question" />
     </div>
-</div>
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>

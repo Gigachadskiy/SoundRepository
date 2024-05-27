@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿//private readonly string _apiKey = "sk-proj-L7NflgdwxFNXBcZsgs9XT3BlbkFJLgZmc7tg0ZxAAV8qtjPB";
+using System;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -10,7 +10,7 @@ namespace BLL
     public class OpenAIService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _apiKey = "sk-proj-MG6vhNJEVmdsxhkPspsrT3BlbkFJrLDRtRo8R4o5dKRX2f64";
+        private readonly string _apiKey = "sk-proj-L7NflgdwxFNXBcZsgs9XT3BlbkFJLgZmc7tg0ZxAAV8qtjPB";
 
         public OpenAIService(HttpClient httpClient)
         {
@@ -22,20 +22,43 @@ namespace BLL
         {
             var data = new
             {
-                model = "text-davinci-003", 
-                prompt = prompt,
+                model = "gpt-3.5-turbo",
+                messages = new[]
+                {
+                    new
+                    {
+                        role = "user",
+                        content = prompt
+                    }
+                },
                 max_tokens = 100
             };
 
             var content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
 
-            var response = await _httpClient.PostAsync("https://api.openai.com/v1/engines/davinci/completions", content);
-            response.EnsureSuccessStatusCode();
+            try
+            {
+                var response = await _httpClient.PostAsync("https://api.openai.com/v1/chat/completions", content);
+                response.EnsureSuccessStatusCode();
 
-            var responseString = await response.Content.ReadAsStringAsync();
-            var result = JsonSerializer.Deserialize<OpenAIResponse>(responseString);
+                var responseString = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<OpenAIResponse>(responseString);
 
-            return result?.Choices[0].Text ?? string.Empty;
+                if (result?.Choices != null && result.Choices.Length > 0 && result.Choices[0].Message != null)
+                {
+                    return result.Choices[0].Message.Content;
+                }
+
+                // Логирование ошибки
+                Console.Error.WriteLine("Invalid response from OpenAI API: " + responseString);
+            }
+            catch (Exception ex)
+            {
+                // Логирование исключения
+                Console.Error.WriteLine("Exception occurred while calling OpenAI API: " + ex.Message);
+            }
+
+            return string.Empty;
         }
     }
 
@@ -46,6 +69,11 @@ namespace BLL
 
     public class Choice
     {
-        public string Text { get; set; }
+        public Message Message { get; set; }
+    }
+
+    public class Message
+    {
+        public string Content { get; set; }
     }
 }
