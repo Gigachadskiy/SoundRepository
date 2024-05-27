@@ -9,7 +9,7 @@ namespace BLL
     public class OpenAIService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _apiKey;
+        private readonly string _apiKey = "sk-proj-L7NflgdwxFNXBcZsgs9XT3BlbkFJLgZmc7tg0ZxAAV8qtjPB";
 
         public OpenAIService(HttpClient httpClient)
         {
@@ -49,7 +49,7 @@ namespace BLL
 
                 if (result?.Choices != null && result.Choices.Length > 0 && result.Choices[0].Message != null)
                 {
-                    return result.Choices[0].Message.Content.Trim();
+                    return result.Choices[0].Message.Content;
                 }
 
                 // Логирование ошибки
@@ -77,7 +77,7 @@ namespace BLL
 
     public class Message
     {
-        public string Role { get; set; }
         public string Content { get; set; }
     }
 }
+
