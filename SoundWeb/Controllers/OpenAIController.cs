@@ -2,7 +2,9 @@
 using BLL;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using System.Collections.Generic;
 using System.Threading.Tasks;
+using DAL.Models;
 
 namespace SoundWeb.Controllers
 {
@@ -30,10 +32,25 @@ namespace SoundWeb.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Find([Bind("Question")] OpenAIDTO finder)
         {
-            finder.Answer = await _openAIService.GetResponseFromAI(finder.Question);
+            // Временно отключить проверку валидации
+            // if (ModelState.IsValid)
+            {
+                var (question, answer) = await _openAIService.GetResponseFromAI(finder.Question);
+                finder.Question = question;
+                finder.Answer = answer;
 
-            TempData["OpenAiAnswer"] = JsonConvert.SerializeObject(finder);
-            return RedirectToAction("ShowFoundOpenAIAnswer");
+                if (!string.IsNullOrEmpty(finder.Answer))
+                {
+                    TempData["OpenAiAnswer"] = JsonConvert.SerializeObject(finder);
+                    return RedirectToAction("ShowFoundOpenAIAnswer");
+                }
+                else
+                {
+                    return RedirectToAction("NotFound");
+                }
+            }
+
+            return View(finder);
         }
 
         public IActionResult ShowFoundOpenAIAnswer()
@@ -43,7 +60,38 @@ namespace SoundWeb.Controllers
             {
                 finder = JsonConvert.DeserializeObject<OpenAIDTO>(TempData["OpenAiAnswer"].ToString());
             }
+            return View(finder);
+        }
 
+        // Новый метод для поиска музыки в базе данных
+        public IActionResult FindMusicInDatabase()
+        {
+            MusicFinderDTO finder = new MusicFinderDTO();
+            return View(finder);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult FindMusicInDatabase([Bind("Name,Author,Tag,Genre")] MusicFinderDTO finder)
+        {
+            List<Music> results = _openAIService.FindMusicInDatabase(finder);
+            ViewBag.Results = results;
+            return View(finder);
+        }
+
+        // Новый метод для поиска музыки с использованием OpenAI
+        public IActionResult FindMusicUsingOpenAI()
+        {
+            OpenAIDTO finder = new OpenAIDTO();
+            return View(finder);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> FindMusicUsingOpenAI([Bind("Question")] OpenAIDTO finder)
+        {
+            finder.Answer = await _openAIService.FindMusicUsingOpenAI(finder.Question);
+            ViewBag.Answer = finder.Answer;
             return View(finder);
         }
     }

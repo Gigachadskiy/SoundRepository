@@ -1,22 +1,20 @@
 ﻿@model BLL.DTO.OpenAIDTO
-
 @{
-    ViewData["Title"] = "Find";
+    ViewData["Title"] = "Find Music Using OpenAI";
 }
 
-<h2>Ask OpenAI</h2>
+<h2>Find Music Using OpenAI</h2>
 
-<form asp-action="Find" method="post">
+<form asp-action="FindMusicUsingOpenAI" method="post">
     <div class="form-group">
         <label for="Question">Question</label>
         <input type="text" class="form-control" id="Question" name="Question" value="@Model.Question" />
-        <span asp-validation-for="Question" class="text-danger"></span>
     </div>
     <button type="submit" class="btn btn-primary">Submit</button>
 </form>
 
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+@if (!string.IsNullOrEmpty(ViewBag.Answer))
+{
+    <h3>Answer:</h3>
+    <p>@ViewBag.Answer</p>
 }

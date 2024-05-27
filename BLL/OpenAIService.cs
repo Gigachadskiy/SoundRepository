@@ -3,21 +3,27 @@ using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
+using BLL.DTO;
+using DAL.Models;
+using System.Collections.Generic;
 
 namespace BLL
 {
     public class OpenAIService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _apiKey = "sk-proj-L7NflgdwxFNXBcZsgs9XT3BlbkFJLgZmc7tg0ZxAAV8qtjPB";
+        private readonly string _apiKey;
+        private readonly MusicFinderService _musicFinderService;
 
-        public OpenAIService(HttpClient httpClient)
+        public OpenAIService(HttpClient httpClient, string apiKey, MusicFinderService musicFinderService)
         {
             _httpClient = httpClient;
+            _apiKey = apiKey;
+            _musicFinderService = musicFinderService;
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
         }
 
-        public async Task<string> GetResponseFromAI(string prompt)
+        public async Task<(string question, string answer)> GetResponseFromAI(string prompt)
         {
             var data = new
             {
@@ -45,11 +51,19 @@ namespace BLL
                 // Логирование полного содержимого ответа для отладки
                 Console.WriteLine("Response from OpenAI API: " + responseString);
 
-                var result = JsonSerializer.Deserialize<OpenAIResponse>(responseString);
-
-                if (result?.Choices != null && result.Choices.Length > 0 && result.Choices[0].Message != null)
+                // Использование JsonDocument для парсинга ответа
+                using (JsonDocument doc = JsonDocument.Parse(responseString))
                 {
-                    return result.Choices[0].Message.Content;
+                    var root = doc.RootElement;
+
+                    var choices = root.GetProperty("choices");
+                    if (choices.GetArrayLength() > 0)
+                    {
+                        var message = choices[0].GetProperty("message");
+                        var contentProperty = message.GetProperty("content");
+
+                        return (prompt, contentProperty.GetString().Trim());
+                    }
                 }
 
                 // Логирование ошибки
@@ -61,23 +75,20 @@ namespace BLL
                 Console.Error.WriteLine("Exception occurred while calling OpenAI API: " + ex.Message);
             }
 
-            return string.Empty;
+            return (prompt, string.Empty);
+        }
+
+        // Метод для поиска музыки в базе данных
+        public List<Music> FindMusicInDatabase(MusicFinderDTO finder)
+        {
+            return _musicFinderService.FindMusic(finder);
+        }
+
+        // Метод для поиска музыки с помощью OpenAI
+        public async Task<string> FindMusicUsingOpenAI(string prompt)
+        {
+            var (_, answer) = await GetResponseFromAI(prompt);
+            return answer;
         }
     }
-
-    public class OpenAIResponse
-    {
-        public Choice[] Choices { get; set; }
-    }
-
-    public class Choice
-    {
-        public Message Message { get; set; }
-    }
-
-    public class Message
-    {
-        public string Content { get; set; }
-    }
 }
-
