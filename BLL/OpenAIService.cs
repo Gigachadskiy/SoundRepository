@@ -1,5 +1,4 @@
-﻿//private readonly string _apiKey = "sk-proj-L7NflgdwxFNXBcZsgs9XT3BlbkFJLgZmc7tg0ZxAAV8qtjPB";
-using System;
+﻿using System;
 using System.Net.Http;
 using System.Text;
 using System.Text.Json;
@@ -10,7 +9,7 @@ namespace BLL
     public class OpenAIService
     {
         private readonly HttpClient _httpClient;
-        private readonly string _apiKey = "sk-proj-L7NflgdwxFNXBcZsgs9XT3BlbkFJLgZmc7tg0ZxAAV8qtjPB";
+        private readonly string _apiKey;
 
         public OpenAIService(HttpClient httpClient)
         {
@@ -42,15 +41,19 @@ namespace BLL
                 response.EnsureSuccessStatusCode();
 
                 var responseString = await response.Content.ReadAsStringAsync();
+
+                // Логирование полного содержимого ответа для отладки
+                Console.WriteLine("Response from OpenAI API: " + responseString);
+
                 var result = JsonSerializer.Deserialize<OpenAIResponse>(responseString);
 
                 if (result?.Choices != null && result.Choices.Length > 0 && result.Choices[0].Message != null)
                 {
-                    return result.Choices[0].Message.Content;
+                    return result.Choices[0].Message.Content.Trim();
                 }
 
                 // Логирование ошибки
-                Console.Error.WriteLine("Invalid response from OpenAI API: " + responseString);
+                Console.Error.WriteLine("Invalid response structure from OpenAI API: " + responseString);
             }
             catch (Exception ex)
             {
@@ -74,6 +77,7 @@ namespace BLL
 
     public class Message
     {
+        public string Role { get; set; }
         public string Content { get; set; }
     }
 }
