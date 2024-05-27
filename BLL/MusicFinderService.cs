@@ -56,9 +56,9 @@ namespace BLL
         // Метод поиска с учетом возможных опечаток
         public List<Music> FindMusicWithFuzzySearch(MusicFinderDTO finder)
         {
-            // Для реализации нечёткого поиска можно использовать внешние библиотеки,
-            // такие как FuzzySharp или написать свой алгоритм.
-            // Здесь используется обычный поиск как пример.
+           
+            // .... FuzzySharp или написать свой алгоритм.
+          
             return FindMusic(finder);
         }
     }
