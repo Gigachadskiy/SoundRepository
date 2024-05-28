@@ -6,9 +6,13 @@ using BLL;
 using DAL.Models;
 using BLL.DTO;
 using Newtonsoft.Json;
+using SoundWeb.CustomClasses;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SoundWeb.Controllers
 {
+    [LayoutByRole]
+    [Authorize(Roles = "Admin,PaidUser")]
     public class MusicFinderController : Controller
     {
         MusicFinderService _musicFinderService;

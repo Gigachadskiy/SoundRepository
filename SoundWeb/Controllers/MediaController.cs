@@ -6,9 +6,11 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.EntityFrameworkCore;
 using DAL.Models;
+using SoundWeb.CustomClasses;
 
 namespace SoundWeb.Controllers
 {
+    [LayoutByRole]
     public class MediaController : Controller
     {
         private readonly SoundContext _context;

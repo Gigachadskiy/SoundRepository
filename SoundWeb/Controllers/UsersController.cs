@@ -9,9 +9,13 @@ using DAL.Models;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication;
+using SoundWeb.CustomClasses;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SoundWeb.Controllers
 {
+    [LayoutByRole]
+ 
     public class UsersController : Controller
     {
         private readonly SoundContext _context;
@@ -22,17 +26,30 @@ namespace SoundWeb.Controllers
         }
 
         // GET: Users
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Index()
         {
             return View(await _context.Users.ToListAsync());
         }
 
-        // GET: Users/Details/5
+
+
+        [Authorize(Roles = "Admin,RegisteredUser,PaidUser")]
+
+        //[AllowAnonymous]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
             {
                 return NotFound();
+            }
+
+            var currentUserRole = HttpContext.Session.GetString("UserRole");
+            var currentUserId = HttpContext.Session.GetInt32("ActiveUserId");
+
+            if (currentUserRole != "Admin" && currentUserId != id)
+            {
+                return Forbid(); // Возвращаем ошибку 403 Forbidden, если пользователь не администратор и пытается получить доступ к чужой информации
             }
 
             var user = await _context.Users
@@ -45,21 +62,61 @@ namespace SoundWeb.Controllers
             return View(user);
         }
 
+        [Authorize(Roles = "Admin")]
         // GET: Users/Create
         public IActionResult Create()
         {
+            ViewBag.UserTypes = Enum.GetValues(typeof(UsersTypes)).Cast<UsersTypes>()
+                .Select(e => new SelectListItem
+                {
+                    Value = ((int)e).ToString(),
+                    Text = e.ToString()
+                }).ToList();
             return View();
         }
 
         // POST: Users/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Id,Name,Surname,Email,Password,AccountFinishDate")] User user)
+        public async Task<IActionResult> Create([Bind("Id,Name,Surname,Email,Password,UserType,AccountFinishDate")] User user)
         {
             if (ModelState.IsValid)
             {
+                // Set AccountFinishDate to null
+                user.AccountFinishDate = null;
+
+                _context.Add(user);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
+            }
+            // If model state is not valid, pass the UserTypes again for the view
+            ViewBag.UserTypes = Enum.GetValues(typeof(UsersTypes)).Cast<UsersTypes>()
+                .Select(e => new SelectListItem
+                {
+                    Value = ((int)e).ToString(),
+                    Text = e.ToString()
+                }).ToList();
+            return View(user);
+        }
+
+
+        [AllowAnonymous]
+        public IActionResult Register()
+        {
+            return View();
+        }
+
+        [AllowAnonymous]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Register([Bind("Name,Surname,Email,Password")] User user)
+        {
+            user.UserType = 2;
+            if (ModelState.IsValid)
+            {
+                user.AccountFinishDate = null;
+                
                 _context.Add(user);
                 await _context.SaveChangesAsync();
                 return RedirectToAction(nameof(Index));
@@ -67,42 +124,53 @@ namespace SoundWeb.Controllers
             return View(user);
         }
 
-		public IActionResult Login()
+        [AllowAnonymous]
+        public IActionResult Login()
 		{
 			return View();
 		}
 
-        // POST: Users/Create
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+
+        [AllowAnonymous]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(User model)
         {
-                string email = model.Email;
-                string password = model.Password;
-                User? user = _context.Users.FirstOrDefault(p => p.Email == email && p.Password == password);
-                if (user != null)
+            string email = model.Email;
+            string password = model.Password;
+            User? user = await _context.Users.FirstOrDefaultAsync(p => p.Email == email && p.Password == password);
+            if (user != null)
+            {
+                var claims = new List<Claim>
                 {
-                    var claims = new List<Claim> { new Claim(ClaimTypes.Name, user.Email) };
-                    ClaimsIdentity claimsIdentity = new ClaimsIdentity(claims, "Cookies");
+                    new Claim(ClaimTypes.Name, user.Email),
+                    new Claim(ClaimTypes.Role, ((UsersTypes)user.UserType).ToString())
+                };
 
-                    HttpContext.Session.SetInt32("ActiveUserId", user.Id);
+                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
 
-                    await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
-                    return RedirectToAction("Index", "Home");
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
 
-                }
-                else
-                {
-                    return RedirectToAction("Create", "Bomba");
-                }
+                HttpContext.Session.SetInt32("ActiveUserId", user.Id);
+                HttpContext.Session.SetString("UserRole", ((UsersTypes)user.UserType).ToString());
 
-            return RedirectToAction("Create", "Genres");
+                return RedirectToAction("Index", "Home");
+            }
+            else
+            {
+                return RedirectToAction("Create", "Bomba");
+            }
         }
 
-
+        [AllowAnonymous]
+        public async Task<IActionResult> Logout()
+        {
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            HttpContext.Session.Clear();
+            return RedirectToAction("Index", "Home");
+        }
         // GET: Users/Edit/5
+        [Authorize(Roles = "Admin,RegisteredUser,PaidUser")]
         public async Task<IActionResult> Edit(int? id)
         {
             if (id == null)
@@ -115,12 +183,20 @@ namespace SoundWeb.Controllers
             {
                 return NotFound();
             }
+
+            var currentUserRole = HttpContext.Session.GetString("UserRole");
+            var currentUserId = HttpContext.Session.GetInt32("ActiveUserId");
+
+            if (currentUserRole != "Admin" && currentUserId != id)
+            {
+                return Forbid(); // Возвращаем ошибку 403 Forbidden, если пользователь не администратор и пытается редактировать чужую информацию
+            }
+
             return View(user);
         }
 
         // POST: Users/Edit/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to.
-        // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Authorize(Roles = "Admin,RegisteredUser,PaidUser")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Surname,Email,Password,AccountFinishDate")] User user)
@@ -128,6 +204,14 @@ namespace SoundWeb.Controllers
             if (id != user.Id)
             {
                 return NotFound();
+            }
+
+            var currentUserRole = HttpContext.Session.GetString("UserRole");
+            var currentUserId = HttpContext.Session.GetInt32("ActiveUserId");
+
+            if (currentUserRole != "Admin" && currentUserId != id)
+            {
+                return Forbid(); // Возвращаем ошибку 403 Forbidden, если пользователь не администратор и пытается редактировать чужую информацию
             }
 
             if (ModelState.IsValid)
@@ -153,7 +237,9 @@ namespace SoundWeb.Controllers
             return View(user);
         }
 
+
         // GET: Users/Delete/5
+        [Authorize(Roles = "Admin,RegisteredUser,PaidUser")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -161,29 +247,50 @@ namespace SoundWeb.Controllers
                 return NotFound();
             }
 
-            var user = await _context.Users
-                .FirstOrDefaultAsync(m => m.Id == id);
+            var user = await _context.Users.FirstOrDefaultAsync(m => m.Id == id);
             if (user == null)
             {
                 return NotFound();
+            }
+
+            var currentUserRole = HttpContext.Session.GetString("UserRole");
+            var currentUserId = HttpContext.Session.GetInt32("ActiveUserId");
+
+            if (currentUserRole != "Admin" && currentUserId != id)
+            {
+                return Forbid(); // Возвращаем ошибку 403 Forbidden, если пользователь не администратор и пытается удалить чужую информацию
             }
 
             return View(user);
         }
 
         // POST: Users/Delete/5
+        [Authorize(Roles = "Admin,RegisteredUser,PaidUser")]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
+            var currentUserRole = HttpContext.Session.GetString("UserRole");
+            var currentUserId = HttpContext.Session.GetInt32("ActiveUserId");
+
+            if (currentUserRole != "Admin" && currentUserId != id)
+            {
+                return Forbid(); // Возвращаем ошибку 403 Forbidden, если пользователь не администратор и пытается удалить чужую информацию
+            }
+
             var user = await _context.Users.FindAsync(id);
             if (user != null)
             {
                 _context.Users.Remove(user);
+                await _context.SaveChangesAsync();
             }
 
-            await _context.SaveChangesAsync();
-            return RedirectToAction(nameof(Index));
+            if (currentUserRole != "Admin")
+
+                 return RedirectToAction(nameof(Logout));
+
+            else
+                return RedirectToAction(nameof(Index));
         }
 
         private bool UserExists(int id)

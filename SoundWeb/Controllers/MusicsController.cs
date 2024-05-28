@@ -10,9 +10,13 @@ using BLL;
 using Microsoft.SqlServer.Server;
 using System.IO;
 using Microsoft.AspNetCore.Mvc.RazorPages;
+using SoundWeb.CustomClasses;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SoundWeb.Controllers
 {
+
+    [LayoutByRole]
     public class MusicsController : Controller
     {
         private readonly SoundContext _context;
@@ -53,6 +57,7 @@ namespace SoundWeb.Controllers
         }
 
         // GET: Musics/Create
+        [Authorize(Roles = "Admin")]
         public IActionResult Create()
         {
             return View();
@@ -61,6 +66,7 @@ namespace SoundWeb.Controllers
         // POST: Musics/Create
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name")] Music music)
@@ -74,6 +80,7 @@ namespace SoundWeb.Controllers
             return View(music);
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> Upload(IFormFile uploadedFile)
         {
@@ -89,6 +96,7 @@ namespace SoundWeb.Controllers
             return View("Error");
         }
 
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         public async Task<IActionResult> UploadImage(IFormFile imageFile)
         {
@@ -103,6 +111,7 @@ namespace SoundWeb.Controllers
 
         }
 
+        
         public async Task<IActionResult> GetMusicFile(int id)
         {
             var musicFile = await _context.Media.Where(m=>m.MusicId == id).FirstOrDefaultAsync();
@@ -114,6 +123,7 @@ namespace SoundWeb.Controllers
         }
 
 
+        [Authorize(Roles = "Admin")]
         // GET: Musics/Edit/5
         public async Task<IActionResult> Edit(int? id)
         {
@@ -133,6 +143,7 @@ namespace SoundWeb.Controllers
         // POST: Musics/Edit/5
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
+        [Authorize(Roles = "Admin")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, [Bind("Id,Name")] Music music)
@@ -166,6 +177,7 @@ namespace SoundWeb.Controllers
         }
 
         // GET: Musics/Delete/5
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int? id)
         {
             if (id == null)
@@ -184,6 +196,7 @@ namespace SoundWeb.Controllers
         }
 
         // POST: Musics/Delete/5
+        [Authorize(Roles = "Admin")]
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)

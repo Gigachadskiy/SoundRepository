@@ -66,25 +66,21 @@ namespace BLL
                     }
                 }
 
-                // Логирование ошибки
                 Console.Error.WriteLine("Invalid response structure from OpenAI API: " + responseString);
             }
             catch (Exception ex)
             {
-                // Логирование исключения
                 Console.Error.WriteLine("Exception occurred while calling OpenAI API: " + ex.Message);
             }
 
             return (prompt, string.Empty);
         }
 
-        // Метод для поиска музыки в базе данных
         public List<Music> FindMusicInDatabase(MusicFinderDTO finder)
         {
             return _musicFinderService.FindMusic(finder);
         }
 
-        // Метод для поиска музыки с помощью OpenAI
         public async Task<string> FindMusicUsingOpenAI(string prompt)
         {
             var (_, answer) = await GetResponseFromAI(prompt);

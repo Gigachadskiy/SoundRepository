@@ -5,9 +5,11 @@ using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using DAL.Models;
+using SoundWeb.CustomClasses;
 
 namespace SoundWeb.Controllers
 {
+    [LayoutByRole]
     public class OpenAIController : Controller
     {
         private readonly OpenAIService _openAIService;

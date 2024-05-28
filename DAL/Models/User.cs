@@ -17,5 +17,7 @@ public partial class User
 
     public DateTime? AccountFinishDate { get; set; }
 
+    public int UserType { get; set; }
+
     public virtual ICollection<UserPlayList> UserPlayLists { get; set; } = new List<UserPlayList>();
 }

@@ -1,10 +1,13 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SoundWeb.CustomClasses;
 using SoundWeb.Models;
 using System.Diagnostics;
 
 namespace SoundWeb.Controllers
 {
-	public class HomeController : Controller
+    [LayoutByRole]
+    public class HomeController : Controller
 	{
 		private readonly ILogger<HomeController> _logger;
 
@@ -13,7 +16,8 @@ namespace SoundWeb.Controllers
 			_logger = logger;
 		}
 
-		public IActionResult Index()
+        [AllowAnonymous]
+        public IActionResult Index()
 		{
 			return View();
 		}
@@ -28,5 +32,12 @@ namespace SoundWeb.Controllers
 		{
 			return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
 		}
-	}
+
+        [AllowAnonymous]
+        public IActionResult AccessDenied()
+        {
+            TempData["ShowUnauthorizedModal"] = true;
+            return RedirectToAction("Index");
+        }
+    }
 }
