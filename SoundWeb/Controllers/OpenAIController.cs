@@ -27,17 +27,13 @@ namespace SoundWeb.Controllers
             return View(finder);
         }
 
-        public IActionResult NotFound()
-        {
-            return View();
-        }
+       
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Find([Bind("Question")] OpenAIDTO finder)
         {
-            // Временно отключить проверку валидации
-            // if (ModelState.IsValid)
+           // if (ModelState.IsValid)
             {
                 var (question, answer) = await _openAIService.GetResponseFromAI(finder.Question);
                 finder.Question = question;
@@ -56,7 +52,10 @@ namespace SoundWeb.Controllers
 
             return View(finder);
         }
-
+        public IActionResult NotFound()
+        {
+            return View();
+        }
         public IActionResult ShowFoundOpenAIAnswer()
         {
             OpenAIDTO finder = new OpenAIDTO();
@@ -67,7 +66,6 @@ namespace SoundWeb.Controllers
             return View(finder);
         }
 
-        // Метод для поиска музыки в базе данных с учетом возможных опечаток
         public IActionResult FindMusicWithFuzzySearch()
         {
             MusicFuzzyFinderDTO finder = new MusicFuzzyFinderDTO();

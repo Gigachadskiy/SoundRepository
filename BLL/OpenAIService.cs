@@ -14,29 +14,35 @@ namespace BLL
         private readonly HttpClient _httpClient;
         private readonly string _apiKey;
         private readonly MusicFinderService _musicFinderService;
+        private readonly SoundContext _soundContext;
 
-        public OpenAIService(HttpClient httpClient, string apiKey, MusicFinderService musicFinderService)
+        public OpenAIService(HttpClient httpClient, string apiKey, MusicFinderService musicFinderService, SoundContext soundContext)
         {
             _httpClient = httpClient;
             _apiKey = apiKey;
             _musicFinderService = musicFinderService;
             _httpClient.DefaultRequestHeaders.Add("Authorization", $"Bearer {_apiKey}");
+            _soundContext = soundContext;
         }
 
         public async Task<(string question, string answer)> GetResponseFromAI(string prompt)
         {
+            var musicList = _soundContext.Musics.ToList();
+            var musicNames = musicList.Select(m => m.Name).ToList();
+            var musicNamesString = string.Join(", ", musicNames);
+            var enhancedPrompt = $"{prompt}\n\n  Give response with language used before this text. You are a helpful audio assistant. Choose music only from this list: {musicNamesString}. Start with the phrase  'Here is the list of music that suits your needs best.' in appropriate language";
             var data = new
             {
-                model = "gpt-3.5-turbo",
+                model = "gpt-4", // Updated model name
                 messages = new[]
                 {
-                    new
-                    {
-                        role = "user",
-                        content = prompt
-                    }
-                },
-                max_tokens = 100
+            new
+            {
+                role = "user",
+                content = enhancedPrompt
+            }
+        },
+                max_tokens = 500 // Adjust this as needed
             };
 
             var content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
@@ -47,11 +53,7 @@ namespace BLL
                 response.EnsureSuccessStatusCode();
 
                 var responseString = await response.Content.ReadAsStringAsync();
-
-                // Логирование полного содержимого ответа для отладки
                 Console.WriteLine("Response from OpenAI API: " + responseString);
-
-                // Использование JsonDocument для парсинга ответа
                 using (JsonDocument doc = JsonDocument.Parse(responseString))
                 {
                     var root = doc.RootElement;
@@ -65,7 +67,6 @@ namespace BLL
                         return (prompt, contentProperty.GetString().Trim());
                     }
                 }
-
                 Console.Error.WriteLine("Invalid response structure from OpenAI API: " + responseString);
             }
             catch (Exception ex)
@@ -76,6 +77,7 @@ namespace BLL
             return (prompt, string.Empty);
         }
 
+
         public List<Music> FindMusicInDatabase(MusicFinderDTO finder)
         {
             return _musicFinderService.FindMusic(finder);
@@ -83,8 +85,13 @@ namespace BLL
 
         public async Task<string> FindMusicUsingOpenAI(string prompt)
         {
+
+
+           
             var (_, answer) = await GetResponseFromAI(prompt);
             return answer;
         }
+
+
     }
 }

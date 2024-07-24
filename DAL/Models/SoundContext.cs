@@ -162,9 +162,7 @@ public partial class SoundContext : DbContext
         {
             entity.HasKey(e => e.Id).HasName("PK_PlayLists");
 
-            entity.Property(e => e.Name)
-                .HasMaxLength(10)
-                .IsFixedLength();
+            entity.Property(e => e.Name).HasMaxLength(50);
 
             entity.HasOne(d => d.User).WithMany(p => p.UserPlayLists)
                 .HasForeignKey(d => d.UserId)

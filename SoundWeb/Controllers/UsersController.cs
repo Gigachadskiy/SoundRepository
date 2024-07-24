@@ -35,8 +35,6 @@ namespace SoundWeb.Controllers
 
 
         [Authorize(Roles = "Admin,RegisteredUser,PaidUser")]
-
-        //[AllowAnonymous]
         public async Task<IActionResult> Details(int? id)
         {
             if (id == null)
@@ -158,7 +156,7 @@ namespace SoundWeb.Controllers
             }
             else
             {
-                return RedirectToAction("Create", "Bomba");
+                return RedirectToAction("Login");
             }
         }
 
@@ -211,7 +209,7 @@ namespace SoundWeb.Controllers
 
             if (currentUserRole != "Admin" && currentUserId != id)
             {
-                return Forbid(); // Возвращаем ошибку 403 Forbidden, если пользователь не администратор и пытается редактировать чужую информацию
+                return Forbid(); 
             }
 
             if (ModelState.IsValid)
@@ -258,7 +256,7 @@ namespace SoundWeb.Controllers
 
             if (currentUserRole != "Admin" && currentUserId != id)
             {
-                return Forbid(); // Возвращаем ошибку 403 Forbidden, если пользователь не администратор и пытается удалить чужую информацию
+                return Forbid(); 
             }
 
             return View(user);
@@ -275,7 +273,7 @@ namespace SoundWeb.Controllers
 
             if (currentUserRole != "Admin" && currentUserId != id)
             {
-                return Forbid(); // Возвращаем ошибку 403 Forbidden, если пользователь не администратор и пытается удалить чужую информацию
+                return Forbid();
             }
 
             var user = await _context.Users.FindAsync(id);

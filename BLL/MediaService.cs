@@ -34,6 +34,12 @@ namespace BLL
                 await _soundContext.SaveChangesAsync();
             }
         }
+        public async Task<Medium> GetMusicFileAsync(int musicId)
+        {
+            var musicFile = await _soundContext.Media.FirstOrDefaultAsync(m => m.MusicId == musicId);
+            return musicFile;
+        }
+
 
         public async Task UploadPictureAsync(int musicId, IFormFile pictureFile)
         {

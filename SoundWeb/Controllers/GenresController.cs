@@ -45,6 +45,15 @@ namespace SoundWeb.Controllers
             return View(genre);
         }
 
+        public IActionResult RelatedMusic(int id)
+        {
+            var musicGenres = _context.MusicGenres.Where(mt => mt.GenreId == id);
+            var musicIds = musicGenres.Select(mt => mt.MusicId).Distinct().ToList();
+            var relatedMusic = _context.Musics.Where(m => musicIds.Contains(m.Id)).ToList();
+
+            return View(relatedMusic);
+        }
+
         // GET: Genres/Create
         public IActionResult Create()
         {

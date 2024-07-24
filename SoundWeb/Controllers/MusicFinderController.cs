@@ -30,13 +30,6 @@ namespace SoundWeb.Controllers
             return View(finder);
         }
 
-
-        public async Task<IActionResult> NotFound()
-        {
-            return View();
-        }
-
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Find([Bind("Name,Author,Tag,Genre")] MusicFinderDTO finder)
@@ -51,6 +44,11 @@ namespace SoundWeb.Controllers
 
 
             return RedirectToAction("NotFound");
+        }
+
+        public async Task<IActionResult> NotFound()
+        {
+            return View();
         }
 
 

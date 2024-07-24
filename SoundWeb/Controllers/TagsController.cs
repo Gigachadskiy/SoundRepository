@@ -42,6 +42,15 @@ namespace SoundWeb.Controllers
             return View(tag);
         }
 
+        public IActionResult RelatedMusic(int id)
+        {
+            var musicTags = _context.MusicTags.Where(mt => mt.TagId == id);
+            var musicIds = musicTags.Select(mt => mt.MusicId).Distinct().ToList();
+            var relatedMusic = _context.Musics.Where(m => musicIds.Contains(m.Id)).ToList();
+
+            return View(relatedMusic);
+        }
+
         // GET: Tags/Create
         public IActionResult Create()
         {

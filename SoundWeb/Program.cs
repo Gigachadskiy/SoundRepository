@@ -17,13 +17,14 @@ builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<MediaService>();
 builder.Services.AddScoped<MusicFinderService>();
-builder.Services.AddHttpClient(); // Регистрируем HttpClient
+builder.Services.AddHttpClient(); 
 
-// Добавляем OpenAIService как Scoped сервис
 builder.Services.AddScoped<OpenAIService>(sp => new OpenAIService(
     sp.GetRequiredService<HttpClient>(),
     builder.Configuration["OpenAI:ApiKey"],
-    sp.GetRequiredService<MusicFinderService>()
+    sp.GetRequiredService<MusicFinderService>(),
+    sp.GetRequiredService<SoundContext>()
+
 ));
 
 // Add services to the container.

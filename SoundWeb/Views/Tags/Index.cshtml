@@ -4,10 +4,11 @@
     ViewData["Title"] = "Index";
 }
 
-<h1>Index</h1>
+<h1 style="text-decoration:underline; text-decoration-color: #a6bcfb;"><i class="ri-hashtag" style="color: #75a2e5;"></i>Tags</h1>
+<h4>To search music genre-wise just click <i class="ri-music-2-fill" style="color: #75a2e5;"></i> button!</h4>
 
 <p>
-    <a asp-action="Create">Create New</a>
+    <a asp-action="Create" class="btn" id="createbtn">Create New</a>
 </p>
 <table class="table">
     <thead>
@@ -19,17 +20,21 @@
         </tr>
     </thead>
     <tbody>
-@foreach (var item in Model) {
-        <tr>
-            <td>
-                @Html.DisplayFor(modelItem => item.Name)
-            </td>
-            <td>
-                <a asp-action="Edit" asp-route-id="@item.Id">Edit</a> |
-                <a asp-action="Details" asp-route-id="@item.Id">Details</a> |
-                <a asp-action="Delete" asp-route-id="@item.Id">Delete</a>
-            </td>
-        </tr>
-}
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.Name)
+                </td>
+                <td>
+                    <a asp-action="RelatedMusic" asp-route-id="@item.Id" style="text-decoration: none;"><i class="ri-music-2-fill" style="color: #75a2e5;"></i></a>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-action="Edit" asp-route-id="@item?.Id" style="text-decoration: none;"><i class="ri-edit-line" style="color: #75a2e5;"></i></a>
+                        <a asp-action="Delete" asp-route-id="@item?.Id" style="text-decoration: none;"><i class="ri-delete-bin-line" style="color: #75a2e5;"></i></a>
+                    }
+                </td>
+            </tr>
+        }
     </tbody>
 </table>

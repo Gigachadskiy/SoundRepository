@@ -12,6 +12,10 @@ using System.IO;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using SoundWeb.CustomClasses;
 using Microsoft.AspNetCore.Authorization;
+using NAudio.Wave;
+using NAudio.Wave.SampleProviders;
+using NAudio.Dsp;
+using DAL.ModelsExt;
 
 namespace SoundWeb.Controllers
 {
@@ -29,9 +33,31 @@ namespace SoundWeb.Controllers
         }
 
         // GET: Musics
-        public async Task<IActionResult> Index()
+        public IActionResult Index(int? genreId, int? tagId)
         {
-            return View(await _context.Musics.ToListAsync());
+            var genres = _context.Genres.ToList();
+            var tags = _context.Tags.ToList();
+
+            ViewBag.Genres = new SelectList(genres, "Id", "Name");
+            ViewBag.Tags = new SelectList(tags, "Id", "Name");
+
+            var musicQuery = _context.Musics.AsQueryable();
+
+            if (genreId.HasValue)
+            {
+                var musicGenres = _context.MusicGenres.Where(mg => mg.GenreId == genreId.Value).Select(mg => mg.MusicId).ToList();
+                musicQuery = musicQuery.Where(m => musicGenres.Contains(m.Id));
+            }
+
+            if (tagId.HasValue)
+            {
+                var musicTags = _context.MusicTags.Where(mt => mt.TagId == tagId.Value).Select(mt => mt.MusicId).ToList();
+                musicQuery = musicQuery.Where(m => musicTags.Contains(m.Id));
+            }
+
+            var music = musicQuery.ToList();
+
+            return View(music);
         }
 
         // GET: Musics/Details/5
@@ -67,7 +93,7 @@ namespace SoundWeb.Controllers
         // To protect from overposting attacks, enable the specific properties you want to bind to.
         // For more details, see http://go.microsoft.com/fwlink/?LinkId=317598.
         [Authorize(Roles = "Admin")]
-        [HttpPost]
+        [HttpPost] 
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Id,Name")] Music music)
         {
@@ -95,6 +121,105 @@ namespace SoundWeb.Controllers
 
             return View("Error");
         }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public async Task<IActionResult> Download(int musicId)
+        {
+            var musicFile = await _mediaService.GetMusicFileAsync(musicId);
+            if (musicFile == null)
+            {
+                return NotFound();
+            }
+
+            var content = new MemoryStream(musicFile.Data);
+            var contentType = "audio/mpeg"; 
+            var fileName = "musicfile.mp3"; 
+
+            return File(content, contentType, fileName);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpGet]
+        public IActionResult EditMusic()
+        {
+            int musicId = (int)HttpContext.Session.GetInt32("MusicId");
+            var model = new EditMusicViewModel { MusicId = musicId };
+            return View(model);
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        public async Task<IActionResult> EditMusic(EditMusicViewModel model)
+        {
+            var musicFile = await _mediaService.GetMusicFileAsync(model.MusicId);
+            if (musicFile == null)
+            {
+                return NotFound();
+            }
+
+            using (var ms = new MemoryStream(musicFile.Data))
+            using (var reader = new Mp3FileReader(ms))
+            {
+                ISampleProvider sampleProvider = reader.ToSampleProvider();
+
+                if (model.Volume != 1.0f)
+                {
+                    sampleProvider = new VolumeSampleProvider(sampleProvider) { Volume = model.Volume };
+                }
+
+                if (model.StartOffset > 0)
+                {
+                    sampleProvider = new OffsetSampleProvider(sampleProvider) { SkipOver = TimeSpan.FromSeconds(model.StartOffset) };
+                }
+
+                if (model.EndOffset > 0)
+                {
+                    sampleProvider = new OffsetSampleProvider(sampleProvider) { Take = TimeSpan.FromSeconds(model.EndOffset) };
+                }
+
+
+                if (model.PitchFactor != 1.0f)
+                {
+                    sampleProvider = new SmbPitchShiftingSampleProvider(sampleProvider, 512, 4096, model.PitchFactor);
+                }
+
+                if (model.FadeInDuration > 0 || model.FadeOutDuration > 0)
+                {
+                    var fadeInOut = new FadeInOutSampleProvider(sampleProvider, true);
+                    if (model.FadeInDuration > 0)
+                    {
+                        fadeInOut.BeginFadeIn(model.FadeInDuration);
+                    }
+                    if (model.FadeOutDuration > 0)
+                    {
+                        fadeInOut.BeginFadeOut(model.FadeOutDuration);
+                    }
+                    sampleProvider = fadeInOut;
+                }
+
+                //using (var outputStream = new MemoryStream())
+                //{
+                //    WaveFileWriter.WriteWavFileToStream(outputStream, (IWaveProvider)sampleProvider);
+                //    outputStream.Position = 0;
+                //    return File(outputStream.ToArray(), "audio/wav", "edited_music.wav");
+                //}
+
+
+                var waveFormat = WaveFormat.CreateIeeeFloatWaveFormat(reader.WaveFormat.SampleRate, reader.WaveFormat.Channels);
+                var resampler = new WdlResamplingSampleProvider(sampleProvider, waveFormat.SampleRate);
+
+                using (var outputStream = new MemoryStream())
+                {
+                    WaveFileWriter.WriteWavFileToStream(outputStream, resampler.ToWaveProvider());
+                    outputStream.Position = 0;
+                    return File(outputStream.ToArray(), "audio/wav", "edited_music.wav");
+                }
+            }
+        }
+
+
+
 
         [Authorize(Roles = "Admin")]
         [HttpPost]
